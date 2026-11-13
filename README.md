@@ -9,9 +9,9 @@ This is an MVP: it uses ready-made tools (EasyOCR + Gemini). The plan is to repl
 ```
 MangaDex link
    → download pages          (download_chapter.py)
-   → find English text       (detect_ocr.py, EasyOCR)
+   → find text               (detect_ocr.py, EasyOCR)
    → translate to Ukrainian  (translate.py, Gemini API, it also sees the page image)
-   → erase English, draw Ukrainian text  (render.py, Pillow)
+   → erase original text, draw Ukrainian text  (render.py, Pillow)
 ```
 
 Each page has a JSON file with all text blocks:
@@ -27,8 +27,8 @@ All steps read and write this JSON. You can fix translations in the web editor a
 Tested on Ubuntu 24.04, Python 3.13. An NVIDIA GPU makes text detection faster, but it also works on CPU.
 
 ```bash
-git clone <this repo>
-cd manga_translator
+git clone https://github.com/Oriado/manga_translate.git
+cd manga_translate
 pip install -r requirements.txt
 cp .env.example .env
 ```
@@ -90,7 +90,7 @@ All these folders are in `.gitignore`.
 
 - **Gemini free tier allows only about 20 pages per day.** If the limit is reached, some pages stay untranslated. Press **Продовжити переклад** (Continue) the next day. Already translated pages are skipped.
 - EasyOCR is not trained on manga, so it makes mistakes on handwritten fonts and sound effects.
-- Text boxes cover only the English letters, not the whole speech bubble. Sometimes small parts of English text (dots) stay, and Ukrainian text can be small.
+- Text boxes cover only the original letters, not the whole speech bubble. Sometimes small parts of English text (dots) stay, and Ukrainian text can be small.
 - Text on dark or colored backgrounds is covered with a white rectangle.
 - Source languages: English (tested), Korean (OCR tested), Chinese (not tested yet). Japanese is not supported: EasyOCR can't read vertical text.
 - The first run for a new language downloads an EasyOCR model (~100 MB).
