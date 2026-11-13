@@ -1,0 +1,8 @@
+CLAUDE.md
+.claude/
+.env
+__pycache__/
+input/
+data/
+output/
+exports/
