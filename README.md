@@ -1,6 +1,6 @@
 # Manga Translator → Ukrainian
 
-Translates manga, manhwa and manhua chapters from English, Korean or Chinese to Ukrainian. Paste a MangaDex chapter link, wait a few minutes, download the translated chapter as PDF or ZIP.
+Translates manga chapters from English to Ukrainian (Korean and Chinese are experimental). Paste a MangaDex chapter link, wait a few minutes, download the translated chapter as PDF or ZIP.
 
 This is an MVP: it uses ready-made tools (EasyOCR + Gemini). The plan is to replace them with my own models later.
 
@@ -49,7 +49,7 @@ uvicorn app:app
 
 Open http://localhost:8000.
 
-1. Go to https://mangadex.org, find a manga, open a chapter in English, Korean or Chinese.
+1. Go to https://mangadex.org, find a manga, open a chapter in English (Korean and Chinese are experimental).
 2. Copy the address from the browser, for example `https://mangadex.org/chapter/df6bf737-1a2d-41b3-a0c2-30864c8f2e5a`.
 3. Paste it into the field and press **Завантажити** (Download). Only the pages are downloaded, nothing is translated yet.
 4. Check the source language (it is taken from MangaDex) and press **Перекласти** (Translate). Progress is shown on the page.
