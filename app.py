@@ -313,6 +313,7 @@ def chapter_page(chapter):
       html += '<a href="/">← на головну</a>'
       html += '<h1>' + escape(info["title"]) + ', розділ ' + escape(str(info["chapter"])) + '</h1>'
       html += '<p><a href="https://mangadex.org/chapter/' + chapter + '" target="_blank">Відкрити розділ на MangaDex ↗</a></p>'
+      html += '<p class="hint">⚠️ Файли на сервері зберігаються тимчасово і видаляються після перезапуску. Завантажте PDF одразу після перекладу.</p>'
       if text != "":
             html += '<p class="status">' + escape(text) + '</p>'
 
