@@ -239,6 +239,9 @@ async def start(request: Request, background_tasks: BackgroundTasks):
       except Exception:
             return RedirectResponse("/?error=Не вдалося знайти цей розділ на MangaDex", status_code=303)
 
+      if info["language"] != "en":
+            return RedirectResponse("/?error=Підтримуються лише розділи англійською", status_code=303)
+
       if not config.SHOW_ADULT and info["rating"] in ["erotica", "pornographic"]:
             return RedirectResponse("/?error=Цей тайтл 18+, на цьому сайті він недоступний", status_code=303)
 
