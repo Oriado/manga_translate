@@ -1,120 +1,81 @@
 # Manga Translator → Ukrainian
 
-Translates manga chapters from English to Ukrainian (Korean and Chinese are experimental). Search a manga on MangaDex, view the original chapter, translate it and download as PDF.
+Find a manga on MangaDex, read the original chapter and translate it from English to Ukrainian. The result can be downloaded as PDF.
 
-This is an MVP: it uses ready-made tools (EasyOCR + Gemini). The plan is to replace them with my own models later.
+**Live demo:** https://manga-translate-3s8p.onrender.com
+
+This is an MVP built on ready-made tools (EasyOCR, Gemini). The plan is to replace them with my own models later.
 
 ## How it works
 
 ```
-MangaDex link
-   → download pages          (download_chapter.py)
-   → find text               (detect_ocr.py, EasyOCR)
-   → translate to Ukrainian  (translate.py, Gemini API, it also sees the page image)
-   → erase original text, draw Ukrainian text  (render.py, Pillow)
+MangaDex API → download pages       (download_chapter.py, search.py)
+             → find text            (detect_ocr.py: EasyOCR locally, Gemini on the server)
+             → translate            (translate.py: Gemini, it also sees the page image)
+             → draw Ukrainian text  (render.py: Pillow)
 ```
 
-Each page has a JSON file with all text blocks:
+Every page has a JSON file with its text blocks. All steps read and write it:
 
 ```json
 [{"box": [700, 534, 904, 582], "src": "PROMISE...", "uk": "обіцяю..."}]
 ```
 
-All steps read and write this JSON. You can fix translations in the web editor and redraw the page.
+## How to use
 
-## Setup
+1. Search a manga by title.
+2. Open it and choose an English chapter → **Відкрити**. You can read the pages or download **PDF оригіналу**.
+3. Press **Перекласти українською**. A progress bar shows how far it is (about 20–40 s per page). You can leave the page, it keeps working.
+4. Click a translated page to fix the text → **Перемалювати**.
+5. Download **PDF українською**.
 
-Tested on Ubuntu 24.04, Python 3.13. An NVIDIA GPU makes text detection faster, but it also works on CPU.
+**Important:** on the free server files are temporary. They are deleted when the server restarts (after updates or 15 minutes without visitors). Download the PDF right after translating.
+
+## Run locally
+
+Tested on Ubuntu 24.04, Python 3.13. A GPU makes EasyOCR faster, but CPU works too.
 
 ```bash
 git clone https://github.com/Oriado/manga_translate.git
 cd manga_translate
 pip install -r requirements.txt
 cp .env.example .env
-```
-
-Get a free Gemini API key at https://aistudio.google.com/apikey and put it into `.env`:
-
-```
-GEMINI_API_KEY=your_key_here
-```
-
-## Usage
-
-### Web app (recommended)
-
-```bash
 uvicorn app:app
 ```
 
-Open http://localhost:8000.
+Put a free Gemini key (https://aistudio.google.com/apikey) into `.env` and open http://localhost:8000. Locally files are kept in `input/`, `data/`, `output/` and `exports/`.
 
-1. Type a manga title and press **Шукати** (Search). Results come from the MangaDex API with covers.
-2. Open a manga and choose an English chapter. Press **Відкрити** (Open): the original pages are downloaded and shown, nothing is translated yet. You can also paste a chapter link like `https://mangadex.org/chapter/df6bf737-...` on the main page.
-3. **PDF оригіналу** downloads the original chapter as PDF.
-4. Press **Перекласти українською** (Translate). A progress bar is shown; you can leave the page, translation continues on the server.
-5. **Зупинити** (Stop) stops after the current page. Pressing **Перекласти** again continues; translated pages are skipped. If the daily Gemini limit is reached, the site says so and stops.
-6. Click a translated page to fix the text, then press **Перемалювати** (Redraw).
-7. **PDF українською** (shown after at least one page is translated) downloads the translated chapter (untranslated pages stay original). **ZIP** contains translated JPG pages. **Видалити розділ** (Delete) removes all its files.
+Command line: `python pipeline.py https://mangadex.org/chapter/<chapter-id>`
 
-The title and chapter number are taken from MangaDex. You can change them on the chapter page; PDF and ZIP files are named after them.
-
-### Command line
-
-```bash
-python pipeline.py https://mangadex.org/chapter/<chapter-id>
-```
-
-Results are saved to `output/<chapter-id>/`.
-
-## Where files are stored
-
-- `input/<chapter-id>/`: original pages
-- `data/<chapter-id>/`: JSON with text and translations for each page, `info.json` with the title
-- `output/<chapter-id>/`: translated pages
-- `exports/`: PDF and ZIP files
-
-All these folders are in `.gitignore`.
-
-## Deploy (Render, free)
-
-EasyOCR needs about 2 GB of RAM, free hosting gives 512 MB. So on the server text is found by Gemini (`DETECTOR=gemini`): one request per page finds the text, its position and translates it. Locally EasyOCR is used by default.
+## Deploy on Render (free)
 
 1. Sign in to https://render.com with GitHub.
-2. **New → Blueprint**, choose this repo. Render reads `render.yaml`.
-3. Enter your `GEMINI_API_KEY` and press **Apply**.
+2. **New → Blueprint**, choose this repo (it uses `render.yaml`).
+3. Enter `GEMINI_API_KEY` → **Apply**.
 
-The free plan sleeps after 15 minutes without visitors, the first request after that takes about a minute. Downloaded chapters are deleted when the server restarts.
+The server uses Gemini instead of EasyOCR (`DETECTOR=gemini`), because EasyOCR needs ~2 GB of RAM and the free plan has 512 MB.
 
 ## Settings
 
-`config.py`:
+In `config.py` or environment variables:
 
-- `TRANSLATOR`: which translator to use (now only `"gemini"`)
-- `DETECTOR`: environment variable, `easyocr` (default) or `gemini`
-- `GEMINI_MODEL`: Gemini model name
-- `FONT_PATH`: font for Ukrainian text (`Pangolin` and `Neucha` are in `fonts/`)
-- `LANGUAGES`: supported source languages and EasyOCR language codes
-- `BLOCKED_RATINGS`: MangaDex content ratings that are not allowed (empty by default)
-- `SHOW_ADULT`: environment variable, `0` hides 18+ titles (used on the public server)
+- `DETECTOR`: `easyocr` (default) or `gemini`
+- `GEMINI_MODEL`: Gemini model
+- `FONT_PATH`: font for Ukrainian text
+- `SHOW_ADULT`: `0` hides 18+ titles
 
-## Known limitations
+## Limitations
 
-- **Gemini free tier allows only about 20 pages per day.** If the limit is reached, some pages stay untranslated. Press **Продовжити переклад** (Continue) the next day. Already translated pages are skipped.
-- EasyOCR is not trained on manga, so it makes mistakes on handwritten fonts and sound effects.
-- Text boxes cover only the original letters, not the whole speech bubble. Sometimes small parts of English text (dots) stay, and Ukrainian text can be small.
-- Text on dark or colored backgrounds is covered with a white rectangle.
-- Source languages: English (tested), Korean (OCR tested), Chinese (not tested yet). Japanese is not supported: EasyOCR can't read vertical text.
-- The first run for a new language downloads an EasyOCR model (~100 MB).
+- Free Gemini allows about **20 pages per day**. When the limit is reached, the site says so; continue the next day, translated pages are kept.
+- Only English chapters. Korean and Chinese exist in the code but are not tested.
+- Sometimes small parts of the English text stay, and text on dark backgrounds gets a white rectangle.
 
 ## Plans
 
-- Own speech bubble detector (YOLO)
-- Own OCR trained on comic fonts
-- Own translation model, more natural Ukrainian
-- Japanese support (`manga-ocr`)
-- Better editor: move and resize text on the page
+- Own speech bubble detector (YOLO), OCR and translation model
+- Saving chapters permanently
+- Better editor: move and resize text
 
 ## Fonts
 
-Pangolin and Neucha are licensed under the SIL Open Font License (see `fonts/`).
+Pangolin and Neucha, SIL Open Font License (see `fonts/`).
