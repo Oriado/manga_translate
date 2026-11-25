@@ -86,8 +86,6 @@ EasyOCR needs about 2 GB of RAM, free hosting gives 512 MB. So on the server tex
 
 The free plan sleeps after 15 minutes without visitors, the first request after that takes about a minute. Downloaded chapters are deleted when the server restarts.
 
-`Dockerfile` runs the full version with EasyOCR (needs about 2.5 GB of RAM).
-
 ## Settings
 
 `config.py`:
