@@ -29,11 +29,12 @@ progress = {}
 
 style = """
 <!DOCTYPE html>
-<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="only light">
 <title>Manga Translator</title>
 <style>
 * { box-sizing: border-box; }
-body { font-family: system-ui, sans-serif; margin: 0; background: #f4f4f6; color: #222; }
+html { background: #f4f4f6; min-height: 100%; color-scheme: only light; }
+body { font-family: system-ui, sans-serif; margin: 0; background: #f4f4f6; color: #222; min-height: 100vh; }
 header { background: #1e1e2e; padding: 14px 30px; display: flex; gap: 24px; align-items: center; }
 header a { color: #ddd; text-decoration: none; font-size: 16px; }
 header .logo { color: white; font-weight: bold; font-size: 20px; margin-right: 20px; }
