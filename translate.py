@@ -9,18 +9,9 @@ import config
 load_dotenv()
 
 
-def translate_gemini(texts, image_path, lang):
+def ask_gemini(prompt, image_path):
       key = os.getenv("GEMINI_API_KEY")
       url = "https://generativelanguage.googleapis.com/v1beta/models/" + config.GEMINI_MODEL + ":generateContent"
-
-      prompt = "Ти перекладач манги з " + config.LANGUAGES[lang]["name"] + " на українську.\n"
-      prompt += "Нижче репліки з однієї сторінки, по порядку. Текст розпізнаний OCR, тому можуть бути помилки в словах, виправ їх за змістом.\n"
-      prompt += "Дивись на картинку сторінки, щоб розуміти, що відбувається і хто говорить.\n"
-      prompt += "Якщо одна репліка розбита на кілька частин, переклади так, щоб разом вони читались як одна фраза.\n"
-      prompt += "Звуки перекладай українськими звуками за змістом картинки (поцілунок = Цмок, удар = Бах).\n"
-      prompt += "Перекладай живою природною українською, як говорять персонажі, з емоцією.\n"
-      prompt += "Поверни тільки JSON масив рядків, рівно " + str(len(texts)) + " елементів, у тому ж порядку. Кожна частина має свій елемент, нічого не склеюй.\n\n"
-      prompt += json.dumps(texts, ensure_ascii=False)
 
       with open(image_path, "rb") as file:
             image = base64.b64encode(file.read()).decode("utf-8")
@@ -39,15 +30,35 @@ def translate_gemini(texts, image_path, lang):
             "generationConfig": {"responseMimeType": "application/json"}
       }
 
-      response = requests.post(url, headers={"x-goog-api-key": key}, json=body)
+      try:
+            response = requests.post(url, headers={"x-goog-api-key": key}, json=body, timeout=120)
+      except Exception as error:
+            print(error)
+            return None
       data = response.json()
 
       if "candidates" not in data:
             print(data)
-            return []
+            return None
 
       answer = data["candidates"][0]["content"]["parts"][0]["text"]
       return json.loads(answer)
+
+
+def translate_gemini(texts, image_path, lang):
+      prompt = "Ти перекладач манги з " + config.LANGUAGES[lang]["name"] + " на українську.\n"
+      prompt += "Нижче репліки з однієї сторінки, по порядку. Текст розпізнаний OCR, тому можуть бути помилки в словах, виправ їх за змістом.\n"
+      prompt += "Дивись на картинку сторінки, щоб розуміти, що відбувається і хто говорить.\n"
+      prompt += "Якщо одна репліка розбита на кілька частин, переклади так, щоб разом вони читались як одна фраза.\n"
+      prompt += "Звуки перекладай українськими звуками за змістом картинки (поцілунок = Цмок, удар = Бах).\n"
+      prompt += "Перекладай живою природною українською, як говорять персонажі, з емоцією.\n"
+      prompt += "Поверни тільки JSON масив рядків, рівно " + str(len(texts)) + " елементів, у тому ж порядку. Кожна частина має свій елемент, нічого не склеюй.\n\n"
+      prompt += json.dumps(texts, ensure_ascii=False)
+
+      answer = ask_gemini(prompt, image_path)
+      if answer is None:
+            return []
+      return answer
 
 
 def translate_texts(texts, image_path, lang):
@@ -62,6 +73,9 @@ def translate_page(json_path, image_path, lang="en"):
             bubbles = json.load(file)
 
       if len(bubbles) == 0:
+            return
+
+      if all("uk" in bubble for bubble in bubbles):
             return
 
       texts =[bubble["src"] for bubble in bubbles]

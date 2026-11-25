@@ -31,7 +31,11 @@ def process_page(chapter, page, lang="en"):
             return True
 
       if not os.path.exists(json_path):
-            bubbles = detect_text(image_path, lang)
+            try:
+                  bubbles = detect_text(image_path, lang)
+            except Exception as error:
+                  print(page, "помилка:", error)
+                  return False
             save_json(bubbles, json_path)
             print(page, "знайдено текстів:", len(bubbles))
 

@@ -1,15 +1,6 @@
----
-title: Manga Translate
-emoji: 📖
-colorFrom: indigo
-colorTo: gray
-sdk: docker
-app_port: 7860
----
-
 # Manga Translator → Ukrainian
 
-Translates manga chapters from English to Ukrainian (Korean and Chinese are experimental). Paste a MangaDex chapter link, wait a few minutes, download the translated chapter as PDF or ZIP.
+Translates manga chapters from English to Ukrainian (Korean and Chinese are experimental). Search a manga on MangaDex, view the original chapter, translate it and download as PDF.
 
 This is an MVP: it uses ready-made tools (EasyOCR + Gemini). The plan is to replace them with my own models later.
 
@@ -85,26 +76,29 @@ Results are saved to `output/<chapter-id>/`.
 
 All these folders are in `.gitignore`.
 
-## Deploy (Hugging Face Spaces, free)
+## Deploy (Render, free)
 
-The repo has a `Dockerfile`, so it runs as a Docker Space:
+EasyOCR needs about 2 GB of RAM, free hosting gives 512 MB. So on the server text is found by Gemini (`DETECTOR=gemini`): one request per page finds the text, its position and translates it. Locally EasyOCR is used by default.
 
-1. Create a Space with SDK **Docker** (CPU basic, free).
-2. In Space **Settings → Variables and secrets** add secret `GEMINI_API_KEY` and variable `SHOW_ADULT=0`.
-3. Push this repo to the Space.
+1. Sign in to https://render.com with GitHub.
+2. **New → Blueprint**, choose this repo. Render reads `render.yaml`.
+3. Enter your `GEMINI_API_KEY` and press **Apply**.
 
-Without a GPU one page takes about 20-30 seconds. Downloaded chapters are deleted when the Space restarts.
+The free plan sleeps after 15 minutes without visitors, the first request after that takes about a minute. Downloaded chapters are deleted when the server restarts.
+
+`Dockerfile` runs the full version with EasyOCR (needs about 2.5 GB of RAM).
 
 ## Settings
 
 `config.py`:
 
 - `TRANSLATOR`: which translator to use (now only `"gemini"`)
+- `DETECTOR`: environment variable, `easyocr` (default) or `gemini`
 - `GEMINI_MODEL`: Gemini model name
 - `FONT_PATH`: font for Ukrainian text (`Pangolin` and `Neucha` are in `fonts/`)
 - `LANGUAGES`: supported source languages and EasyOCR language codes
 - `BLOCKED_RATINGS`: MangaDex content ratings that are not allowed (empty by default)
-- `SHOW_ADULT`: environment variable, `0` hides 18+ titles (used on the public demo)
+- `SHOW_ADULT`: environment variable, `0` hides 18+ titles (used on the public server)
 
 ## Known limitations
 

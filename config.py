@@ -1,6 +1,7 @@
 import os
 
 TRANSLATOR = "gemini"
+DETECTOR = os.getenv("DETECTOR", "easyocr")
 GEMINI_MODEL = "gemini-2.5-flash"
 
 FONT_PATH = "fonts/Pangolin-Regular.ttf"

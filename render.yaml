@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: manga-translate
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-server.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.1
+      - key: DETECTOR
+        value: gemini
+      - key: SHOW_ADULT
+        value: "0"
+      - key: GEMINI_API_KEY
+        sync: false
