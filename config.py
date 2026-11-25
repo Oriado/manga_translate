@@ -1,3 +1,5 @@
+import os
+
 TRANSLATOR = "gemini"
 GEMINI_MODEL = "gemini-2.5-flash"
 
@@ -10,3 +12,5 @@ LANGUAGES = {
 }
 
 BLOCKED_RATINGS = []
+
+SHOW_ADULT = os.getenv("SHOW_ADULT", "1") == "1"

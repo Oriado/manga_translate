@@ -1,0 +1,9 @@
+.env
+.git
+CLAUDE.md
+.claude
+__pycache__
+input
+data
+output
+exports

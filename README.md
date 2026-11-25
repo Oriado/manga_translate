@@ -1,3 +1,12 @@
+---
+title: Manga Translate
+emoji: 📖
+colorFrom: indigo
+colorTo: gray
+sdk: docker
+app_port: 7860
+---
+
 # Manga Translator → Ukrainian
 
 Translates manga chapters from English to Ukrainian (Korean and Chinese are experimental). Paste a MangaDex chapter link, wait a few minutes, download the translated chapter as PDF or ZIP.
@@ -49,13 +58,13 @@ uvicorn app:app
 
 Open http://localhost:8000.
 
-1. Go to https://mangadex.org, find a manga, open a chapter in English (Korean and Chinese are experimental).
-2. Copy the address from the browser, for example `https://mangadex.org/chapter/df6bf737-1a2d-41b3-a0c2-30864c8f2e5a`.
-3. Paste it into the field and press **Завантажити** (Download). Only the pages are downloaded, nothing is translated yet.
+1. Type a manga title and press **Шукати** (Search). Results come from the MangaDex API with covers.
+2. Open a manga and choose a chapter (English; Korean and Chinese are experimental). Press **Відкрити** (Open): the original pages are downloaded and shown, nothing is translated yet. You can also paste a chapter link like `https://mangadex.org/chapter/df6bf737-...` on the main page.
+3. **PDF оригіналу** downloads the original chapter as PDF.
 4. Check the source language (it is taken from MangaDex) and press **Перекласти** (Translate). Progress is shown on the page.
 5. **Зупинити** (Stop) stops after the current page. **Перекласти / Продовжити переклад** continues; translated pages are skipped.
 6. Click a translated page to fix the text, then press **Перемалювати** (Redraw).
-7. Download the chapter as **PDF** or **ZIP** with JPG images. **Видалити розділ** (Delete) removes all its files.
+7. **PDF українською** downloads the translated chapter (untranslated pages stay original). **ZIP** contains translated JPG pages. **Видалити розділ** (Delete) removes all its files.
 
 The title and chapter number are taken from MangaDex. You can change them on the chapter page; PDF and ZIP files are named after them.
 
@@ -76,6 +85,16 @@ Results are saved to `output/<chapter-id>/`.
 
 All these folders are in `.gitignore`.
 
+## Deploy (Hugging Face Spaces, free)
+
+The repo has a `Dockerfile`, so it runs as a Docker Space:
+
+1. Create a Space with SDK **Docker** (CPU basic, free).
+2. In Space **Settings → Variables and secrets** add secret `GEMINI_API_KEY` and variable `SHOW_ADULT=0`.
+3. Push this repo to the Space.
+
+Without a GPU one page takes about 20-30 seconds. Downloaded chapters are deleted when the Space restarts.
+
 ## Settings
 
 `config.py`:
@@ -85,6 +104,7 @@ All these folders are in `.gitignore`.
 - `FONT_PATH`: font for Ukrainian text (`Pangolin` and `Neucha` are in `fonts/`)
 - `LANGUAGES`: supported source languages and EasyOCR language codes
 - `BLOCKED_RATINGS`: MangaDex content ratings that are not allowed (empty by default)
+- `SHOW_ADULT`: environment variable, `0` hides 18+ titles (used on the public demo)
 
 ## Known limitations
 
