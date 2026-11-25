@@ -54,6 +54,8 @@ button:hover, .button:hover { opacity: 0.85; }
 .plain { background: transparent; box-shadow: none; }
 .box { background: white; border-radius: 12px; padding: 20px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-top: 20px; }
 .outline { background: white; color: #4a3aff; border: 1px solid #4a3aff; }
+summary { list-style: none; cursor: pointer; }
+summary::-webkit-details-marker { display: none; }
 .bar { width: 100%; height: 22px; background: #e4e4ee; border-radius: 11px; overflow: hidden; margin: 10px 0; }
 .bar div { height: 100%; background: #4a3aff; transition: width 0.5s; }
 .hero form { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
@@ -155,7 +157,7 @@ def index(error: str = ""):
       html += '<p class="hint">1. Знайдіть мангу → 2. Відкрийте розділ і перегляньте оригінал → 3. Перекладіть і завантажте PDF</p>'
       if error != "":
             html += '<p class="error">' + escape(error) + '</p>'
-      html += '<details style="margin-top:20px"><summary class="hint">Маєте посилання на розділ MangaDex?</summary><br>'
+      html += '<details style="margin-top:20px"><summary class="button outline">🔗 Маєте посилання на розділ MangaDex?</summary><br>'
       html += '<form method="post" action="/start">'
       html += '<input type="text" name="link" placeholder="https://mangadex.org/chapter/..."> '
       html += '<button class="outline" type="submit">Відкрити розділ</button></form></details></div>'
