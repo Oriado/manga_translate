@@ -3,6 +3,7 @@ import json
 import time
 from PIL import Image
 import config
+import translate
 from translate import ask_gemini
 
 readers = {}
@@ -31,7 +32,7 @@ def detect_gemini(image_path, lang):
 
       answer = ask_gemini(prompt, image_path)
       tries = 1
-      while answer is None and tries < 3:
+      while answer is None and tries < 3 and translate.last_error != 429:
             time.sleep(10)
             answer = ask_gemini(prompt, image_path)
             tries = tries + 1

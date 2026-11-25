@@ -50,12 +50,12 @@ uvicorn app:app
 Open http://localhost:8000.
 
 1. Type a manga title and press **Шукати** (Search). Results come from the MangaDex API with covers.
-2. Open a manga and choose a chapter (English; Korean and Chinese are experimental). Press **Відкрити** (Open): the original pages are downloaded and shown, nothing is translated yet. You can also paste a chapter link like `https://mangadex.org/chapter/df6bf737-...` on the main page.
+2. Open a manga and choose an English chapter. Press **Відкрити** (Open): the original pages are downloaded and shown, nothing is translated yet. You can also paste a chapter link like `https://mangadex.org/chapter/df6bf737-...` on the main page.
 3. **PDF оригіналу** downloads the original chapter as PDF.
-4. Check the source language (it is taken from MangaDex) and press **Перекласти** (Translate). Progress is shown on the page.
-5. **Зупинити** (Stop) stops after the current page. **Перекласти / Продовжити переклад** continues; translated pages are skipped.
+4. Press **Перекласти українською** (Translate). A progress bar is shown; you can leave the page, translation continues on the server.
+5. **Зупинити** (Stop) stops after the current page. Pressing **Перекласти** again continues; translated pages are skipped. If the daily Gemini limit is reached, the site says so and stops.
 6. Click a translated page to fix the text, then press **Перемалювати** (Redraw).
-7. **PDF українською** downloads the translated chapter (untranslated pages stay original). **ZIP** contains translated JPG pages. **Видалити розділ** (Delete) removes all its files.
+7. **PDF українською** (shown after at least one page is translated) downloads the translated chapter (untranslated pages stay original). **ZIP** contains translated JPG pages. **Видалити розділ** (Delete) removes all its files.
 
 The title and chapter number are taken from MangaDex. You can change them on the chapter page; PDF and ZIP files are named after them.
 

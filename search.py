@@ -28,6 +28,7 @@ def search_manga(text, adult=False):
             "includes[]": "cover_art",
             "contentRating[]": ratings,
             "order[relevance]": "desc",
+            "availableTranslatedLanguage[]": "en",
       }
       response = requests.get(API + "/manga", params=params)
       data = response.json()

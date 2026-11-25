@@ -8,8 +8,12 @@ import config
 
 load_dotenv()
 
+last_error = None
+
 
 def ask_gemini(prompt, image_path):
+      global last_error
+      last_error = None
       key = os.getenv("GEMINI_API_KEY")
       url = "https://generativelanguage.googleapis.com/v1beta/models/" + config.GEMINI_MODEL + ":generateContent"
 
@@ -39,6 +43,8 @@ def ask_gemini(prompt, image_path):
 
       if "candidates" not in data:
             print(data)
+            if "error" in data:
+                  last_error = data["error"]["code"]
             return None
 
       answer = data["candidates"][0]["content"]["parts"][0]["text"]
@@ -81,7 +87,7 @@ def translate_page(json_path, image_path, lang="en"):
       texts =[bubble["src"] for bubble in bubbles]
       translations = translate_texts(texts, image_path, lang)
       tries = 1
-      while len(translations) != len(bubbles) and tries < 3:
+      while len(translations) != len(bubbles) and tries < 3 and last_error != 429:
             print("Пробую ще раз...")
             time.sleep(10)
             translations = translate_texts(texts, image_path, lang)

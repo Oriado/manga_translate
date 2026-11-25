@@ -12,6 +12,7 @@ from pipeline import process_page
 from render import render_page
 from search import search_manga, get_manga, get_chapters, get_cover_image
 import config
+import translate as translate_module
 
 os.makedirs("input", exist_ok=True)
 os.makedirs("data", exist_ok=True)
@@ -24,6 +25,7 @@ app.mount("/output", StaticFiles(directory="output"), name="output")
 
 status = {}
 stop = set()
+progress = {}
 
 style = """
 <!DOCTYPE html>
@@ -45,7 +47,14 @@ button, .button { display: inline-block; padding: 11px 20px; font-size: 15px; ba
 button:hover, .button:hover { opacity: 0.85; }
 .gray { background: #555; }
 .red { background: #c0392b; }
-.hero { text-align: center; padding: 30px 0; }
+.hero { text-align: center; padding: 50px 20px 30px; }
+.hero input[type=text] { max-width: 750px; padding: 15px; font-size: 18px; }
+.hero button { padding: 15px 28px; font-size: 17px; }
+.plain { background: transparent; box-shadow: none; }
+.box { background: white; border-radius: 12px; padding: 20px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-top: 20px; }
+.outline { background: white; color: #4a3aff; border: 1px solid #4a3aff; }
+.bar { width: 100%; height: 22px; background: #e4e4ee; border-radius: 11px; overflow: hidden; margin: 10px 0; }
+.bar div { height: 100%; background: #4a3aff; transition: width 0.5s; }
 .hero form { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .status { background: #eef; padding: 12px 16px; border-radius: 8px; font-weight: bold; }
 .pages { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 20px; }
@@ -108,46 +117,56 @@ def translate_task(chapter_id, lang):
             pages = sorted(os.listdir("input/" + chapter_id))
             failed = 0
             for i in range(len(pages)):
+                  progress[chapter_id] = [i, len(pages)]
                   if chapter_id in stop:
-                        status[chapter_id] = "Зупинено на сторінці " + str(i + 1) + ". Натисніть «Продовжити переклад», щоб продовжити."
+                        status[chapter_id] = "Зупинено. Перекладені сторінки збережено, натисніть «Перекласти», щоб продовжити."
                         return
                   status[chapter_id] = "Перекладаю сторінку " + str(i + 1) + " з " + str(len(pages))
                   if not process_page(chapter_id, pages[i], lang):
                         failed = failed + 1
+                        if translate_module.last_error == 429:
+                              status[chapter_id] = "Денний ліміт перекладу вичерпано (безкоштовний Gemini: ~20 сторінок на день). Перекладені сторінки збережено, продовжіть завтра."
+                              return
 
+            progress[chapter_id] = [len(pages), len(pages)]
             if failed > 0:
-                  status[chapter_id] = "Готово, але " + str(failed) + " сторінок не перекладено (можливо, закінчився ліміт Gemini). Натисніть «Продовжити переклад» пізніше."
+                  status[chapter_id] = "Готово, але " + str(failed) + " сторінок не вдалося перекласти (сервер Gemini перевантажений). Натисніть «Перекласти» ще раз пізніше."
             else:
-                  status[chapter_id] = "Готово"
+                  status[chapter_id] = "Готово! Можна завантажити PDF українською."
       except Exception as error:
             status[chapter_id] = "Помилка: " + str(error)
 
 
 @app.get("/", response_class=HTMLResponse)
 def index(error: str = ""):
-      html = style + '<div class="hero"><h1>Переклад манги українською</h1>'
-      html += "<p>1. Знайдіть мангу → 2. Відкрийте розділ і перегляньте оригінал → 3. Перекладіть і завантажте PDF</p>"
+      html = style.replace("<main>", '<main class="plain">')
+      working = any(is_working(chapter) for chapter in status)
+      if working:
+            html += '<meta http-equiv="refresh" content="5">'
+      html += '<div class="hero"><h1>Переклад манги українською</h1>'
+      html += '<p>Манга береться з <a href="https://mangadex.org" target="_blank">MangaDex</a>. Перекладаються розділи англійською.</p>'
       html += '<form method="get" action="/search">'
-      html += '<input type="text" name="q" placeholder="Назва манги, наприклад City Hunter"> '
-      html += '<button type="submit">Шукати</button> '
+      html += '<input type="text" name="q" placeholder="Назва манги англійською або японською, наприклад City Hunter"> '
+      html += '<button type="submit">Шукати</button>'
       if config.SHOW_ADULT:
-            html += '<label><input type="checkbox" name="adult" value="1"> показувати 18+</label>'
+            html += '<br><label><input type="checkbox" name="adult" value="1"> показувати 18+</label>'
       html += '</form>'
-
-      html += '<p class="hint" style="margin-top:25px">Або вставте посилання на розділ MangaDex:</p>'
-      html += '<form method="post" action="/start">'
-      html += '<input type="text" name="link" placeholder="https://mangadex.org/chapter/..."> '
-      html += '<button class="gray" type="submit">Відкрити розділ</button></form></div>'
+      html += '<p class="hint">1. Знайдіть мангу → 2. Відкрийте розділ і перегляньте оригінал → 3. Перекладіть і завантажте PDF</p>'
       if error != "":
             html += '<p class="error">' + escape(error) + '</p>'
+      html += '<details style="margin-top:20px"><summary class="hint">Маєте посилання на розділ MangaDex?</summary><br>'
+      html += '<form method="post" action="/start">'
+      html += '<input type="text" name="link" placeholder="https://mangadex.org/chapter/..."> '
+      html += '<button class="outline" type="submit">Відкрити розділ</button></form></details></div>'
 
-      html += '<h2 id="my">Мої розділи</h2>'
-      if len(os.listdir("input")) == 0:
-            html += '<p class="hint">Тут з\'являться розділи, які ви відкриєте.</p>'
-      for chapter in sorted(os.listdir("input")):
-            info = read_info(chapter)
-            html += '<p><a href="/chapter/' + chapter + '">' + escape(info["title"]) + ', розділ ' + escape(str(info["chapter"])) + '</a> '
-            html += escape(status.get(chapter, "")) + '</p>'
+      chapters = sorted(os.listdir("input"))
+      if len(chapters) > 0:
+            html += '<div class="box"><h2 id="my">Мої розділи</h2>'
+            for chapter in chapters:
+                  info = read_info(chapter)
+                  html += '<p><a href="/chapter/' + chapter + '">' + escape(info["title"]) + ', розділ ' + escape(str(info["chapter"])) + '</a> '
+                  html += '<span class="hint">' + escape(status.get(chapter, "")) + '</span></p>'
+            html += '</div>'
       return html
 
 
@@ -184,16 +203,12 @@ def manga_page(manga_id, lang: str = "en", offset: int = 0):
       html += '<div style="display:flex; gap:20px; margin-top:15px">'
       if manga["cover"]:
             html += '<img src="/cover/' + manga_id + '/' + manga["cover"] + '" style="width:200px; border-radius:6px">'
-      html += '<div><h1>' + escape(manga["title"]) + '</h1><p>' + escape(manga["description"][:600]) + '</p></div></div>'
-
-      html += '<form method="get"><p>Мова розділів: <select name="lang" onchange="this.form.submit()">'
-      for code in config.LANGUAGES:
-            selected = " selected" if code == lang else ""
-            html += '<option value="' + code + '"' + selected + '>З ' + config.LANGUAGES[code]["name"] + '</option>'
-      html += '</select></p></form>'
+      html += '<div><h1>' + escape(manga["title"]) + '</h1><p>' + escape(manga["description"][:600]) + '</p>'
+      html += '<a href="https://mangadex.org/title/' + manga_id + '" target="_blank">Відкрити на MangaDex ↗</a></div></div>'
+      html += '<h2>Розділи англійською</h2>'
 
       if len(chapters) == 0:
-            html += "<p>Розділів цією мовою немає.</p>"
+            html += "<p>Англійських розділів для перекладу немає. Деякі розділи на MangaDex доступні лише на сторонніх сайтах, їх завантажити не можна.</p>"
       html += '<table>'
       for chapter in chapters:
             name = "Розділ " + str(chapter["number"])
@@ -287,34 +302,47 @@ def chapter_page(chapter):
       text = status.get(chapter, "")
       working = is_working(chapter)
 
+      translated = 0
+      if os.path.exists("output/" + chapter):
+            translated = len(os.listdir("output/" + chapter))
+
       html = style
       if working:
             html += '<meta http-equiv="refresh" content="3">'
       html += '<a href="/">← на головну</a>'
       html += '<h1>' + escape(info["title"]) + ', розділ ' + escape(str(info["chapter"])) + '</h1>'
+      html += '<p><a href="https://mangadex.org/chapter/' + chapter + '" target="_blank">Відкрити розділ на MangaDex ↗</a></p>'
       if text != "":
             html += '<p class="status">' + escape(text) + '</p>'
+
+      if working and chapter in progress:
+            done, total = progress[chapter]
+            percent = int(done * 100 / total)
+            html += '<div class="bar"><div style="width:' + str(percent) + '%"></div></div>'
+            html += '<p class="hint">' + str(percent) + '%. Одна сторінка перекладається приблизно 20–40 секунд. '
+            html += 'Можна піти на головну або закрити вкладку: переклад продовжиться, а результат з\'явиться тут.</p>'
 
       if working:
             html += '<form method="post" action="/chapter/' + chapter + '/stop"><button class="red" type="submit">Зупинити</button></form>'
       else:
             html += '<form style="display:inline" method="post" action="/chapter/' + chapter + '/translate">'
-            html += '<select name="lang">'
-            for code in config.LANGUAGES:
-                  selected = " selected" if code == info["language"] else ""
-                  html += '<option value="' + code + '"' + selected + '>З ' + config.LANGUAGES[code]["name"] + '</option>'
-            html += '</select> '
-            html += '<button type="submit">Перекласти / Продовжити переклад</button></form> '
+            html += '<input type="hidden" name="lang" value="' + escape(info["language"] if info["language"] in config.LANGUAGES else "en") + '">'
+            if translated == 0:
+                  html += '<button type="submit">Перекласти українською</button></form> '
+            else:
+                  html += '<button type="submit">Перекласти / продовжити переклад</button></form> '
             html += '<a class="button gray" href="/chapter/' + chapter + '/pdf_original">PDF оригіналу</a> '
-            html += '<a class="button" href="/chapter/' + chapter + '/pdf">PDF українською</a> '
-            html += '<a class="button gray" href="/chapter/' + chapter + '/zip">ZIP (JPG)</a> '
+            if translated > 0:
+                  html += '<a class="button" href="/chapter/' + chapter + '/pdf">PDF українською</a> '
+                  html += '<a class="button gray" href="/chapter/' + chapter + '/zip">ZIP (JPG)</a> '
             html += '<form style="display:inline" method="post" action="/chapter/' + chapter + '/delete" onsubmit="return confirm(\'Видалити цей розділ?\')">'
             html += '<button class="red" type="submit">Видалити розділ</button></form>'
             html += '<form method="post" action="/chapter/' + chapter + '/rename" style="margin-top:15px">'
             html += 'Назва: <input type="text" name="title" style="width:400px" value="' + escape(info["title"]) + '"> '
             html += 'Розділ: <input type="text" name="number" style="width:60px" value="' + escape(str(info["chapter"])) + '"> '
-            html += '<button type="submit">Зберегти назву</button></form>'
-            html += '<p class="hint">Уже перекладені сторінки пропускаються. Клацніть на перекладену сторінку, щоб редагувати текст.</p>'
+            html += '<button class="outline" type="submit">Зберегти назву</button></form>'
+            if translated > 0:
+                  html += '<p class="hint">Клацніть на перекладену сторінку, щоб виправити текст.</p>'
 
       html += '<div class="pages">'
       folder = "input/" + chapter
@@ -387,7 +415,7 @@ def make_pdf(chapter, translated):
 
 @app.get("/chapter/{chapter}/pdf")
 def pdf(chapter):
-      if not os.path.exists("input/" + chapter):
+      if not os.path.exists("output/" + chapter) or len(os.listdir("output/" + chapter)) == 0:
             return RedirectResponse("/", status_code=303)
       return make_pdf(chapter, True)
 
